@@ -1,6 +1,6 @@
 # CampyThermoEvo2025
 
-This is the repository for the manuscript
+This is the repository for the manuscript (https://dx.doi.org/10.2139/ssrn.5490870)
 
 
 # Notation and parameters
