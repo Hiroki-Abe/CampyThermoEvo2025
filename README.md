@@ -194,7 +194,9 @@ See `CITATION.cff`, or cite the article above. Code is released under the MIT
 licence and the data under CC BY 4.0; see `LICENSE`.
 
 The single-notebook code of the previous version of this work is kept in the
-history of this repository, at the tag `v0-original`.
+history of this repository; the branch
+[`v0-original`](https://github.com/Hiroki-Abe/CampyThermoEvo2025/tree/v0-original)
+points at its last commit.
 
 ## Archiving
 
