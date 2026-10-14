@@ -1,0 +1,3 @@
+scenario,mean P(infection),95th percentile
+present-day strains,0.0018979530104674773,0.007961745015542636
+after 100 cycles at 6-log,0.18575328240822975,0.2930269662240506

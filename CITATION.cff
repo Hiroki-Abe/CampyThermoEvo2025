@@ -1,0 +1,55 @@
+cff-version: 1.2.0
+title: >-
+  CampyThermoEvo: simulating the selection of heat-resistant Campylobacter
+  jejuni during repeated heating
+message: >-
+  If you use this software or the data set, please cite the article below.
+type: software
+authors:
+  - family-names: Abe
+    given-names: Hiroki Furugori
+    affiliation: >-
+      Division of Microbiology, National Institute of Health Sciences,
+      Kawasaki, Kanagawa, Japan
+    email: hi-abe@nihs.go.jp
+  - family-names: Kawasaki
+    given-names: Susumu
+    affiliation: >-
+      Institute of Food Research, National Agriculture and Food Research
+      Organization, Tsukuba, Japan
+  - family-names: Yoshinari
+    given-names: Tomoya
+    affiliation: >-
+      Division of Microbiology, National Institute of Health Sciences,
+      Kawasaki, Kanagawa, Japan
+  - family-names: Ohnishi
+    given-names: Takahiro
+    affiliation: >-
+      Division of Microbiology, National Institute of Health Sciences,
+      Kawasaki, Kanagawa, Japan
+repository-code: https://github.com/Hiroki-Abe/CampyThermoEvo2025
+license: MIT
+version: 1.0.0
+keywords:
+  - predictive microbiology
+  - thermal inactivation
+  - strain variability
+  - Campylobacter jejuni
+  - quantitative microbial risk assessment
+  - Markov chain Monte Carlo
+preferred-citation:
+  type: article
+  title: >-
+    Simulating the selection of heat-resistant Campylobacter jejuni during
+    repeated heating, from the variability measured among and within strains
+  authors:
+    - family-names: Abe
+      given-names: Hiroki Furugori
+    - family-names: Kawasaki
+      given-names: Susumu
+    - family-names: Yoshinari
+      given-names: Tomoya
+    - family-names: Ohnishi
+      given-names: Takahiro
+  journal: Microbiology Spectrum
+  year: 2026

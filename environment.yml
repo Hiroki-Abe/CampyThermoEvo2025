@@ -1,0 +1,19 @@
+name: campyevo
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - cmdstan=2.40           # the version used for the published fit (osx-arm64 build on conda-forge)
+  - cmdstanpy=1.3.*
+  - numpy>=1.26
+  - scipy>=1.11
+  - pandas>=2.1
+  - matplotlib>=3.8
+  - nbformat
+  - jupyterlab
+  - ipykernel
+  - tqdm
+  - pytest
+  - python-pptx>=1.0      # notebook 04: figures -> PowerPoint
+  - pypdf>=4              # notebook 04: figures -> one PDF
+  - pillow

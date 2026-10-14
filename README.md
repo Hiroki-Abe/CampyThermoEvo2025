@@ -1,262 +1,204 @@
-# CampyThermoEvo2025
+# CampyThermoEvo
 
-This is the repository for the manuscript "Predicting highly thermotolerant foodborne pathogen strains: evolutionary modeling considering inter- and intra-strain variability
-" (https://dx.doi.org/10.2139/ssrn.5490870)
+Data, code and notebooks for
 
+> **Simulating the selection of heat-resistant *Campylobacter jejuni* during
+> repeated heating, from the variability measured among and within strains**
+> Hiroki Furugori Abe, Susumu Kawasaki, Tomoya Yoshinari, Takahiro Ohnishi.
+> *Microbiology Spectrum* (2026).
 
-# Notation and parameters
+**What the study does.** Bacteria of the same species differ in how well they
+survive heating. Risk assessment usually treats that difference as a fixed
+property of the species. Here it is treated as something that can change: a
+population is heated, the survivors regrow, and the cycle repeats. The
+simulation is built from survival curves of 50 *C. jejuni* strains measured at
+55 °C, using both the variability **between** strains and the variability
+**between replicate experiments of one strain**.
 
-**A Markov chain Monte Carlo framework for exploring parameter dynamics under repeated thermal
-inactivation with inter- and intra-strain variability**
-
-This document defines every symbol used in the model and maps each one onto the corresponding
-variable name in the code. Throughout, the subscripts **inter** and **intra** are used
-consistently; the variable names in the code use `between` and `within` for the same two levels.
-
----
-
-## 1. Inactivation model
-
-Individual-cell survival is described by a modified Weibull model:
-
-$$\log_{10} N_t \;=\; \log_{10} N_0 \;-\; 6\left(\frac{t}{6\delta}\right)^{p}$$
-
-| Symbol | Definition | Unit |
-|---|---|---|
-| $\delta$ | Characteristic time per log-reduction, averaged over a 6-log reduction | min |
-| $p$ | Shape parameter of the modified Weibull model | – |
-| $N_0,\;N_t$ | Viable count before heating and after heating for time $t$ | CFU mL⁻¹ |
-| $t$ | Heating time | min |
-
-### The meaning of δ
-
-The time required to reach a 6-log reduction is **6δ**, not δ, and this holds **for any value
-of p**:
-
-$$t\;=\;6\delta \;\;\Longrightarrow\;\; 6\left(\frac{6\delta}{6\delta}\right)^{p} = 6 \text{ log},
-\qquad \text{for all } p$$
-
-Equivalently, writing $\delta_6$ for the 6-log reduction time,
-
-$$\delta \;=\; \frac{\delta_6}{6}$$
-
-so δ is the **mean characteristic time per one log-reduction**, averaged over a 6-log reduction.
-
-### Why δ is rescaled
-
-The classical Mafart δ is the time for the **first** decimal reduction. When a survival curve has
-a shoulder ($p>1$) or a tail ($p<1$), that first log is not representative of the inactivation
-behavior as a whole. Five hypothetical strains with an identical classical δ of 1.00 min differ
-six-fold in their actual 6-log times:
-
-| $p$ | Curve shape | Classical δ (1-log time) | Actual 6-log time |
-|---|---|---|---|
-| 0.6 | strong tailing | 1.00 min | 19.81 min |
-| 0.7 | tailing | 1.00 min | 12.93 min |
-| 1.0 | log-linear | 1.00 min | 6.00 min |
-| 1.3 | shoulder | 1.00 min | 3.97 min |
-| 1.5 | strong shoulder | 1.00 min | 3.30 min |
-
-A parameter that assigns the same value to strains needing 3.3 min and 19.8 min for the same
-practical outcome cannot rank strains by heat resistance. The rescaling also removes an
-entanglement between the two parameters that would otherwise make the covariance structure
-uninterpretable: sampling from the fitted inter-strain distribution gives
-corr(ln δ, ln p) = **−0.00** under the parameterization used here, against **−0.78** under the
-classical parameterization. Because the method is a random walk *in the* (δ, p) *plane*, a
-shape-independent δ is a prerequisite rather than a convenience.
-
-The two parameterizations are related by
-
-$$\delta \;=\; \delta_{\text{classical}}\cdot \frac{6^{1/p}}{6}$$
-
-### Generalization to other reduction targets
-
-The time to reach any target $R$ (in log₁₀) is
-
-$$t_R \;=\; 6\delta\left(\frac{R}{6}\right)^{1/p}$$
-
-which returns $t = 6\delta$ at $R = 6$ for every $p$. For the fitted parameters
-(δ = 1.296 min, p = 1.024), the three heating durations used in this study are:
-
-| Label | Heating time | Achieved reduction (95% CrI) |
-|---|---|---|
-| 2-log | 2.591 min ( = 2δ ) | 1.945 log (1.773–2.126) |
-| 4-log | 5.182 min ( = 4δ ) | 3.959 log (3.826–4.091) |
-| 6-log | 7.774 min ( = 6δ ) | 6.000 log (exact for any $p$) |
-
-At $p = 1$ the durations $2\delta$, $4\delta$ and $6\delta$ give exactly 2-, 4- and 6-log
-reductions; the small departures above reflect the fitted $p$ of 1.024.
+Everything in the paper can be reproduced from this repository: the four
+notebooks run in order produce every figure, every table and every number
+quoted in the main text and in the supplementary material.
 
 ---
 
-## 2. Observation model
+## What is here
 
-Colony counts are modeled as Poisson, so that measurement noise from plate counting is separated
-from biological variability during Bayesian inference:
+```
+data/
+  Cam_all_55C_2024_01_31.csv     plate counts, 53 strains x 3 replicate experiments at 55 °C
+  synthetic_example.csv          fake data with the same columns, to check the pipeline
+campyevo/                        the Python package
+  data.py        plate-count table -> Stan input; synthetic data for testing
+  fitting.py     CmdStan wrappers and diagnostics
+  posterior.py   the posterior draws the simulation uses
+  sim.py         the simulation engine (reference and fast engines, parallel runner)
+  benchmark.py   the whole-population variant used for the comparison with Berdejo et al.
+  analysis.py    convergence, validation, risk-assessment and benchmark summaries
+  plotting.py    the figures
+  figure_deck.py the figure list, the legends, and the PowerPoint / PDF assembly
+stan/
+  multilevel_weibull.stan        the model of Equations 1a-1d
+notebooks/                       run 01 -> 02 -> 03 -> 04
+figures_manual/                  the two hand-drawn figures (Fig. 2 and Fig. S7)
+results/                         output: figures, tables, cached simulations, posterior
+tests/test_engine.py             checks of the simulation engine
+```
 
-$$N_{\text{plate},t,l,k} \sim \text{Poisson}\!\left(10^{\log N_{t,l,k}} \cdot \frac{V_{\text{plate}}}{10^{d}}\right)$$
+### The data set
 
-| Symbol | Definition |
+`data/Cam_all_55C_2024_01_31.csv` is the plate-count table of Abe & Kawasaki
+(2024, 2025), where the experimental procedures are described. One row is one
+plate count:
+
+| column | meaning |
 |---|---|
-| $N_{\text{plate},t,l,k}$ | Colony count on a plate for strain $l$, heating time $t$, replicate $k$ |
-| $V_{\text{plate}}$ | Plated volume |
-| $d$ | Number of 10-fold dilutions |
-| $l$ | Strain index, $l = 1,\dots,n_{\text{strain}}$ (50 strains) |
-| $k$ | Replicate index, $k = 1,\dots,n_{\text{replicates}}$ |
+| `Strain_Name` | strain |
+| `rep_ID` | replicate experiment within the strain |
+| `t_heat` | heating time (min) |
+| `n_dilu` | number of 10-fold dilutions plated |
+| `V` | plated volume (mL) |
+| `Nt_count` | colony count on the plate |
+
+The code applies two exclusions, both made in the original analysis and both
+stated in `campyevo/data.py`:
+
+* the strains RIMD 0366027, RIMD 0366043 and IFTK 344 are dropped;
+* IFTK 33 was measured twice, and the earlier three replicate experiments
+  (`rep_ID` 1-3, on the coarser time grid) are dropped in favour of the later
+  three.
+
+What is left is what the paper analyses: **50 strains, 150 survival curves,
+1,276 plate counts**.
+
+In these experiments each strain was heated **once**. Cells that survived were
+not regrown and heated again, so the data contain no information about repeated
+heating; that is what the simulation supplies, under the assumptions listed in
+Table S6 of the paper.
 
 ---
 
-## 3. Hierarchical variability
+## Which notebook makes what
 
-Both levels of variability act on the **logarithms** of the two parameters, which keeps both
-parameters positive and makes the joint distribution approximately normal.
-
-$$\begin{pmatrix}\ln\delta_{l,k}\\ \ln p_{l,k}\end{pmatrix}
-\sim \text{MVN}_{\text{intra}}\!\left[\begin{pmatrix}\ln\delta_{l,\text{mean}}\\ \ln p_{l,\text{mean}}\end{pmatrix},\;\text{COV}_{\text{intra}}\right]$$
-
-$$\begin{pmatrix}\ln\delta_{l,\text{mean}}\\ \ln p_{l,\text{mean}}\end{pmatrix}
-\sim \text{MVN}_{\text{inter}}\!\left[\begin{pmatrix}\ln\delta_{\text{mean}}\\ \ln p_{\text{mean}}\end{pmatrix},\;\text{COV}_{\text{inter}}\right]$$
-
-| Symbol | Definition |
+| Notebook | Output in the paper |
 |---|---|
-| $\text{MVN}_{\text{inter}}$ | Multivariate normal distribution of $(\ln\delta,\ln p)$ **among** strains |
-| $\text{MVN}_{\text{intra}}$ | Multivariate normal distribution of $(\ln\delta,\ln p)$ **within** a strain |
-| $\text{COV}_{\text{inter}}$ | Covariance matrix of $\text{MVN}_{\text{inter}}$ |
-| $\text{COV}_{\text{intra}}$ | Covariance matrix of $\text{MVN}_{\text{intra}}$ |
-| $\text{COV}_{\text{chol,inter}}$, $\text{COV}_{\text{chol,intra}}$ | Cholesky factors used during Stan fitting; $\text{COV} = \text{COV}_{\text{chol}}\cdot\text{COV}_{\text{chol}}^{\mathsf T}$ |
+| `01_fit_multilevel_model.ipynb` | Fit of Equations 1a-1d with CmdStan, diagnostics, **Fig. 1**, **Table S1a**, **Table S1b** |
+| `02_main_simulations.ipynb` | The 100-cycle simulations: **Figs 3, 4, 5, 6**, **Fig. S2**, **Fig. S8**, the convergence and treatment-effect tables |
+| `03_supplementary_analyses.ipynb` | Validation of the algorithm (**Text S1**, **Fig. S1**, **Table S2**); the sensitivity analyses (**Figs S3a, S3b, S4, S5**, **Tables S3a, S3b, S3c, S4**); the comparison with Berdejo et al. (**Table S5**, **Table S5b**); the risk-assessment illustration (**Fig. S6**) |
+| `04_figures_powerpoint.ipynb` | All figures assembled into `Figures_main.pptx` / `.pdf`, `Figures_supplementary.pptx` / `.pdf` and `figure_legends.txt` |
 
-Fitting used the `MultiNormalCholesky` parameterization, which is mathematically equivalent to
-the multivariate normal form above and improves sampling efficiency.
+**Fig. 2** (one heating–regrowth cycle) and **Fig. S7** (the same cycle written
+formally) are drawn by hand and live in `figures_manual/`; notebook 04 places
+them in the deck.
 
-**Interpretation used throughout:** inter-strain variability acts as the *gravity of the species*,
-bounding where a lineage can go; intra-strain variability acts as the *step size*, determining how
-far it can move per cycle.
+The CSV files in `results/tables/` are the output of the authors' own run and
+back every number quoted in the paper, so they can be checked without running
+anything.
 
-Posterior estimates (mean of the posterior draws):
+---
 
-| Quantity | Value |
+## Setup
+
+Tested on macOS (Apple silicon) and Linux.
+
+```bash
+# 1. a C++ compiler for CmdStan (macOS)
+xcode-select --install
+
+# 2. the environment, with CmdStan from conda-forge (recommended)
+conda env create -f environment.yml
+conda activate campyevo
+
+#    or, without conda:
+#    python3 -m venv .venv && source .venv/bin/activate
+#    pip install -r requirements.txt
+#    python -c "import cmdstanpy; cmdstanpy.install_cmdstan(cores=8)"
+
+# 3. check
+python -c "import cmdstanpy; print(cmdstanpy.cmdstan_path())"
+python -m pytest tests -q
+```
+
+## Running
+
+```bash
+cd notebooks
+jupyter lab          # run 01 -> 02 -> 03 -> 04 in order
+```
+
+Figures are written to `results/figures/` as PDF, PNG and SVG (the SVG keeps
+text editable). Notebook 04 builds the PowerPoint and PDF decks: one slide per
+figure at its real size, the SVG with a PNG fallback, and the legend in the
+speaker notes. In PowerPoint, right-click → *Convert to Shape* makes every
+element editable.
+
+Simulations are cached in `results/sims/`, so after the first run, changing a
+figure and re-running 02 → 04 takes about a minute. Delete a cache file to
+re-run that condition.
+
+```bash
+CAMPYEVO_QUICK=1 jupyter lab     # every run shrunk; finishes in minutes, code check only
+```
+
+Chain *k* draws from `default_rng([seed, k])`, so a result does not depend on
+how many processes ran it.
+
+If the data file is missing, the notebooks fall back to
+`data/synthetic_example.csv` and say so in their output. Those numbers are not
+the study's results.
+
+---
+
+## The two simulation engines
+
+Both implement the same model. One cycle is: regrowth to *N*<sub>cell</sub>
+cells with intra-strain divergence, constrained by a Metropolis–Hastings step
+against the inter-strain distribution; then stochastic thermal death of every
+cell; then carry-over of *n* survivors.
+
+* `reference` draws all *N*<sub>cell</sub> cells every cycle, as the published
+  code did.
+* `fast` (used automatically when *n* = 1) draws cells in blocks and stops at
+  the first survivor. The cells are independent and identically distributed, so
+  the first survivor has the same distribution as a survivor picked at random,
+  and a lineage is lost exactly when none of the *N*<sub>cell</sub> cells
+  survives. The two engines therefore define the same probability model;
+  `tests/test_engine.py` compares them.
+
+## Notation
+
+| Paper | Code |
 |---|---|
-| $\ln\delta_{\text{mean}}$ | 0.259 (δ = 1.296 min) |
-| $\ln p_{\text{mean}}$ | 0.005 (p = 1.024) |
-| SD of $\ln\delta$ across strains | 0.258 |
-| SD of $\ln p$ across strains | 0.306 |
-| corr($\ln\delta$, $\ln p$) across strains | −0.455 |
+| (ln δ<sub>mean</sub>, ln p<sub>mean</sub>) | `Posterior.mu_inter` |
+| COV<sub>inter</sub>, COV<sub>intra</sub> | `Posterior.cov_inter`, `Posterior.cov_intra` |
+| *N*<sub>cell</sub> | `SimSettings.n_cell` |
+| *n* (carry-over) | `SimSettings.n_carry` |
+| *L* (acceptance-step exponent) | `SimSettings.L` |
+| SD multipliers | `SimSettings.s_intra`, `SimSettings.s_inter` |
+| *t*<sub>heating</sub> | `SimSettings.t_heating` |
+
+The Stan model keeps `between` and `within` in its variable names, inherited
+from the original code: `cov_between` = COV<sub>inter</sub> and `cov_within` =
+COV<sub>intra</sub>. The Python code uses `inter` and `intra`, as the paper
+does.
+
+Modified Weibull model: log<sub>10</sub> *N*<sub>t</sub> = log<sub>10</sub>
+*N*<sub>0</sub> − 6 (*t* / 6δ)<sup>*p*</sup>. The time to a 6-log reduction is
+6δ for any *p*, so δ is the mean time per log reduction over a 6-log reduction,
+and δ equals the D-value when *p* = 1.
 
 ---
 
-## 4. Metropolis–Hastings acceptance step
+## Citing
 
-Each cell proposes a new parameter couple from $\text{MVN}_{\text{intra}}$ centered on its parent,
-and the proposal is accepted with probability
+See `CITATION.cff`, or cite the article above. Code is released under the MIT
+licence and the data under CC BY 4.0; see `LICENSE`.
 
-$$P(\text{accept}) \;=\; \min\!\left(1,\; LR^{\,L}\right),
-\qquad
-LR \;=\;
-\frac{f_{\text{MVN}_{\text{inter}}}\!\left[\left(\begin{smallmatrix}\ln\delta\\ \ln p\end{smallmatrix}\right)_{\text{candidate}}\right]}
-     {f_{\text{MVN}_{\text{inter}}}\!\left[\left(\begin{smallmatrix}\ln\delta\\ \ln p\end{smallmatrix}\right)_{\text{prior}}\right]}$$
+The single-notebook code of the previous version of this work is kept in the
+history of this repository, at the tag `v0-original`.
 
-| Symbol | Definition |
-|---|---|
-| $f_{\text{MVN}}$ | **Probability density function** of a multivariate normal distribution |
-| $LR$ | Ratio of the $\text{MVN}_{\text{inter}}$ densities of the candidate and the current couple |
-| $L$ | Exponent applied to $LR$ in the acceptance step |
+## Archiving
 
-> **Note on $f_{\text{MVN}}$.** Earlier drafts wrote this as $L_{\text{MVN}}$ ("likelihood"), which
-> was ambiguous: the probability of any single point under a continuous distribution is zero.
-> $LR$ is a ratio of probability **densities**, and the notation $f_{\text{MVN}}$ is used here to
-> make that explicit.
-
-### The role of $L$
-
-Because the proposal distribution $\text{MVN}_{\text{intra}}$ is symmetric about the current value,
-the step above is a **random-walk Metropolis algorithm**, and at $L = 1$ its stationary
-distribution is exactly $\text{MVN}_{\text{inter}}$.
-
-| $L$ | Behavior | Stationary distribution |
-|---|---|---|
-| 0 | No species-level constraint; free diffusion | none (unbounded) |
-| **1** | **Standard Metropolis–Hastings — used for every result in this study** | $\text{MVN}_{\text{inter}}$ |
-| > 1 | Stronger "gravity of the species" | $\propto \text{MVN}_{\text{inter}}^{\,L}$ (narrower) |
-
-$L$ is therefore a **tempering parameter on the species-level constraint**, not a fitted quantity.
-It is held at 1 throughout, and is varied only as a diagnostic: with heating switched off, the
-standard deviation of $\ln\delta$ after 100 cycles is 1.013 at $L = 0$, 0.233 at $L = 1$ (against
-a target of 0.258) and 0.166 at $L = 2$, confirming the behavior tabulated above.
-
----
-
-## 5. Simulation settings
-
-| Symbol | Definition | Value used |
-|---|---|---|
-| $N_{\text{cell}}$ | Population size after regrowth | $10^4$ (4-log regrowth) |
-| $n$ | **Carry-over parameter**: cells transferred between successive cycles | 1 |
-| $t_{\text{heating}}$ | Heat treatment duration per cycle | 2.591 / 5.182 / 7.774 min |
-| $t_{\text{death}}$ | Death time of an individual cell | sampled per cell |
-| — | Number of heating–regrowth cycles | 100 |
-| — | Number of independent replicate chains | 10,000 |
-| — | Treatment temperature | 55 °C |
-
-Individual death times are generated by inverse-transform sampling from the same modified Weibull
-model, with $u \sim \text{Uniform}(0,1)$:
-
-$$t_{\text{death}} \;=\; 6\delta\left(\frac{-\log_{10}(1-u)}{6}\right)^{1/p}$$
-
-A cell survives the cycle if $t_{\text{death}} > t_{\text{heating}}$.
-
-**On $n = 1$.** This represents the extreme case in which regrowth between cycles is initiated by a
-single cell carried over in a droplet or by surface contact. It is the *conservative* setting: the
-sensitivity analysis shows that larger $n$ produces *larger* shifts toward thermotolerance
-(saturating for $n \gtrsim 100$), because selection can then act across lineages rather than being
-dominated by drift within one. Conversely, $n = 1$ maximizes the probability of complete
-population extinction.
-
----
-
-## 6. Sensitivity analysis parameters
-
-These multiply the **standard deviations**, so the corresponding covariance matrices are scaled by
-the square.
-
-| Symbol | Applies to | Values tested | Published setting |
-|---|---|---|---|
-| $s_{\text{intra}}$ | SD of $\text{MVN}_{\text{intra}}$ | 0.25, 0.5, 1, 2, 4 | 1 |
-| $s_{\text{inter}}$ | SD of $\text{MVN}_{\text{inter}}$ | 0.5, 0.75, 1, 1.5, 2 | 1 |
-| $n$ | Carry-over parameter | 1, 10, 100, 1000 | 1 |
-| $L$ | Acceptance-step exponent | 0, 0.5, 1, 2 | 1 |
-
----
-
-## 7. Manuscript notation and code variable names
-
-| Manuscript | Code variable | Where |
-|---|---|---|
-| $\left(\ln\delta_{\text{mean}},\ \ln p_{\text{mean}}\right)$ | `samples['Paras0_between']` | Stan posterior |
-| $\text{COV}_{\text{inter}}$ | `samples['cov_between']` | Stan posterior |
-| $\text{COV}_{\text{intra}}$ | `samples['cov_within']` | Stan posterior |
-| $L$ | `L_para` | simulation |
-| $s_{\text{intra}}$ | `sigma_adjust_para` (original) / `sd_scale_within` (revision) | simulation |
-| $s_{\text{inter}}$ | `sd_scale_between` (revision) | simulation |
-| $N_{\text{cell}}$ | `cell_count` | simulation |
-| $n$ | `n_carry` (revision; fixed at 1 in the original) | simulation |
-| $t_{\text{heating}}$ | `t_heating` | simulation |
-| Number of cycles | `revo_num` | simulation |
-| Number of replicate chains | `sim_num` | simulation |
-
-> **On `between` / `within` versus `inter` / `intra`.** The two pairs denote the same two levels of
-> variability. The manuscript uses **inter** and **intra** throughout; the code retains
-> `between` and `within` as variable names, inherited from the Stan model. They are
-> interchangeable: `cov_between` = $\text{COV}_{\text{inter}}$ and
-> `cov_within` = $\text{COV}_{\text{intra}}$.
-
----
-
-## 8. Files
-
-| File | Content |
-|---|---|
-| `Multiple_heating_and_revolution.ipynb` | Main simulation reported in the paper |
-| `Revision_analyses.ipynb` | Algorithm validation and sensitivity analyses |
-| `revision_core.py` | Generalized simulation engine (reduces exactly to the published chain at $n = 1$, $L = 1$, $s = 1$) |
-| `Samples extracted modfied Weibull multi-level MVN stan.pkl` | Extracted Stan posterior draws |
-| `modified Weibull multi-level MVN.pkl` | Fitted Stan model object |
+For a citable, permanent snapshot, link this repository to
+[Zenodo](https://zenodo.org/account/settings/github/) and publish a release.
+Zenodo mints a DOI for the release, which can be quoted in the Data
+availability statement alongside the repository URL.
